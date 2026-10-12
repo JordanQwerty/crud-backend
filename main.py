@@ -1,6 +1,7 @@
 # uvicorn main:app --reload
 # http://127.0.0.1:8000/docs
 from csv import DictReader
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine
@@ -10,14 +11,13 @@ import logging
 import json
 
 def csvToJson() :
-    with open("MOCK_DATA.csv", 'r') as f:
+    with open(Path(__file__).with_name("MOCK_DATA.csv"), 'r') as f:
 
         dict_reader = DictReader(f)
 
         list_of_dict = list(dict_reader)
 
-        json_string = json.dumps(list_of_dict, indent=4)
-        return json_string
+        return list_of_dict
 
 # Create all tables in the database
 models.Base.metadata.create_all(bind=engine)
@@ -48,9 +48,7 @@ def get_db():
 # ROOT
 @app.get("/")
 def read_root():
-    items = csvToJson()
-
-    return {"message": items}
+    return {"message": "Hello Micro service"}
 
 
 # CREATE - Add a new item
@@ -63,15 +61,15 @@ def create_item(item: schemas.ItemCreate, db: Session = Depends(get_db)):
     db.refresh(db_item)
     return db_item
 
-@app.post("/items/upload", response_model=list[schemas.Item])
-def create_items(item: schemas.ItemCreate, db: Session = Depends(get_db)):
-    items = csvToJson()
-    for x in items :
-
-        db.add(x)
-        db.commit()
-        db.refresh(x)
-        return x
+@app.post("/upload", response_model=list[schemas.Item])
+def create_items(db: Session = Depends(get_db)):
+    items = [models.Item(**row) for row in csvToJson()]
+    logging.info("UPLOAD : importing %s CSV rows", len(items))
+    db.add_all(items)
+    db.commit()
+    for item in items:
+        db.refresh(item)
+    return items
 
 # READ - Get all items
 @app.get("/items/", response_model=list[schemas.Item])
