@@ -7,8 +7,8 @@ python3.14 -m venv venv
 source venv/bin/activate
 
 # Clon the latest app directly onto the server
-git clone https://github.com/gestrada3/CAD_backend_app.git
-cd CAD_backend_app
+git clone https://github.com/JordanQwerty/crud-backend
+cd crud-backend
 pip install -r requirements.txt
 
 # Run Uvicorn on port 80 bound to all interfaces
